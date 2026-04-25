@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
-	"time"
 
 	"github.com/cjcox17/sudokit/cache"
 	"github.com/cjcox17/sudokit/email"
@@ -77,19 +76,15 @@ func Boot(cfg *Config, services *Services) error {
 }
 
 func (k *Kernel) startServices() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	// Only start jobs service - events service should be started before kernel.Boot()
 	// to ensure handlers are attached before job events are published
 	if k.jobs != nil {
+		slog.Info("Kernel: starting jobs service...")
 		if err := k.jobs.Start(); err != nil {
 			return fmt.Errorf("failed to start jobs service: %w", err)
 		}
 		slog.Info("Jobs service started")
 	}
-
-	ctx.Done()
 
 	return nil
 }

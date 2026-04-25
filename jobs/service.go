@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,14 +62,19 @@ func (s *Service) Start() error {
 		return fmt.Errorf("service already started")
 	}
 
-	ctx := context.Background()
+	slog.Info("Jobs service: ensuring indexes...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	if err := s.queue.EnsureIndexes(ctx); err != nil {
 		return fmt.Errorf("failed to ensure indexes: %w", err)
 	}
+	slog.Info("Jobs service: indexes ensured")
 
+	slog.Info("Jobs service: starting worker pool...")
 	if err := s.pool.Start(); err != nil {
 		return fmt.Errorf("failed to start worker pool: %w", err)
 	}
+	slog.Info("Jobs service: worker pool started")
 
 	s.started = true
 	slog.Info("Jobs service started")
